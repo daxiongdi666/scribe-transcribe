@@ -1,14 +1,12 @@
 # Scribe Transcribe
 
-微信视频号下载 + 音视频转写工具。Python CLI 实现，轻量简洁。支持 Windows / macOS / Linux。
+微信视频号下载工具。Python CLI 实现，轻量简洁。支持 Windows / macOS / Linux。
 
 基于 [autogame-17/scribe-studio](https://github.com/autogame-17/scribe-studio) 的视频号下载核心，用 Python 重新封装。
 
 ## 功能
 
 - **视频号下载** — MITM 代理拦截，自动注入下载按钮到微信视频号页面
-- **音视频转写** — 基于 faster-whisper 的本地语音转文字（可选）
-- **多格式导出** — SRT 字幕 + 纯文本
 
 ## 架构
 
@@ -17,9 +15,7 @@ wx-dl.exe (Go, MITM代理+API服务)
     ↕ HTTP API (localhost:2022)
 main.py (Python CLI, 总控)
     ├── 启动/管理代理服务
-    ├── ffmpeg 抽音轨 (16kHz WAV)
-    ├── faster-whisper 本地转写
-    └── 导出 SRT / TXT
+    └── 查看下载任务
 ```
 
 ## 前置条件
@@ -28,7 +24,6 @@ main.py (Python CLI, 总控)
 |------|---------|------|---------|
 | **Go** | 1.21+ | 编译视频号下载器 | `winget install GoLang.Go` 或 `brew install go` |
 | **Python** | 3.10+ | 运行主程序 | [python.org](https://python.org) |
-| **ffmpeg** | 任意版本 | 音频提取 | `winget install Gyan.FFmpeg` 或 `brew install ffmpeg` |
 | **Git** | 任意版本 | 克隆上游下载器源码 | `winget install Git.Git` 或 `brew install git` |
 
 ## 安装
@@ -65,7 +60,7 @@ go build -o ../../../scribe-transcribe/bin/wx-dl .
 pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 ```
 
-首次转写时 faster-whisper 会自动下载模型（约 462MB），后续复用缓存。
+只需 `requests` 一个包，非常轻量。
 
 ## 使用
 
@@ -87,11 +82,8 @@ chmod +x start.sh
 ### 命令行模式
 
 ```bash
-# 启动视频号代理服务（下载 + 自动转写）
+# 启动视频号代理服务
 python main.py serve --download-dir ./downloads
-
-# 对本地音视频文件转写
-python main.py transcribe ./some-video.mp4
 
 # 查看已下载的任务
 python main.py tasks
@@ -113,15 +105,12 @@ python main.py tasks
 
 ```
 scribe-transcribe/
-├── main.py              # CLI 入口（serve / transcribe / tasks）
+├── main.py              # CLI 入口（serve / tasks）
 ├── downloader.py        # Go 代理服务管理
-├── transcriber.py       # faster-whisper 转写 + 幻觉清理
-├── audio.py             # ffmpeg 音频提取
-├── exporter.py          # SRT / TXT 导出
-├── config.py            # 配置管理 + 转写缓存
+├── config.py            # 配置管理
 ├── start.bat            # Windows 一键启动脚本
 ├── start.sh             # macOS / Linux 一键启动脚本
-├── requirements.txt     # Python 依赖
+├── requirements.txt     # Python 依赖（仅 requests）
 └── bin/                 # 编译产物（gitignore）
     └── wx-dl(.exe)
 ```
@@ -153,9 +142,6 @@ xattr -cr bin/wx-dl-arm64  # 或 bin/wx-dl
 
 **Q: 手机配置代理后无法上网？**
 A: 检查手机代理配置的 IP 和端口是否正确，确保手机和电脑在同一局域网。
-
-**Q: 转写很慢？**
-A: 默认使用 CPU + int8 量化。如果有 NVIDIA 显卡，修改 `config.py` 中的 `WHISPER_DEVICE = "cuda"` 可大幅加速。
 
 **Q: 权限不够无法启动代理？**
 A: Windows 右键 `start.bat` → 以管理员身份运行；macOS 使用 `sudo ./start.sh`（设置系统代理需要管理员权限）。
