@@ -8,6 +8,9 @@ import requests
 
 from config import WX_DL_EXE, WX_DL_API
 
+# 本地 API 请求不走系统代理（避免被 7897 等代理拦截）
+_NO_PROXY = {"http": None, "https": None}
+
 
 class Downloader:
     """管理 Go 视频号下载器子进程"""
@@ -69,7 +72,7 @@ class Downloader:
         deadline = time.time() + timeout
         while time.time() < deadline:
             try:
-                resp = requests.get(f"{self.api_base}/api/status", timeout=2)
+                resp = requests.get(f"{self.api_base}/api/status", timeout=2, proxies=_NO_PROXY)
                 if resp.status_code == 200:
                     return True
             except requests.ConnectionError:
@@ -91,6 +94,7 @@ class Downloader:
                 f"{self.api_base}/api/task/list",
                 params={"status": status, "page": 1, "pageSize": 100},
                 timeout=5,
+                proxies=_NO_PROXY,
             )
             data = resp.json()
             if data.get("code") == 0:
